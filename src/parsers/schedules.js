@@ -22,7 +22,7 @@ function createSchedulesParser() {
         routes = [],
         departuresPerHour = [],
         legends = [],
-        routesCodes = [],
+        routesDescs = [],
 
         result = {
             lineTypeNames: [],
@@ -75,11 +75,25 @@ function createSchedulesParser() {
     }
 
     function parseRoutesDescriptors(input) {
-        routesCodes.push(str.splitByNL(input).map(parseRouteDescriptor));
+        routesDescs.push(str.splitByNL(input).map(parseRouteDescriptor));
     }
 
     function parseRouteDescriptor(input) {
-        return str.splitBySpace(input)[0];
+        var parts = str.splitByLengths(
+          input, [17, 8, 30, 6, 5, 30, 6, 10, 2, 7]);
+        return {
+            code: parts[0],
+            dir: parts[8],
+            lvl: parts[10],
+            begin: {
+                name: str.removeDelimiterAtEnd(parts[2], ','),
+                city: parts[3],
+            },
+            end: {
+                name: str.removeDelimiterAtEnd(parts[5], ','),
+                city: parts[6],
+            },
+        };
     }
 
     function parseTransportLines(input) {
@@ -105,13 +119,17 @@ function createSchedulesParser() {
         result.schedule.push({
             id: lineId,
             type: lineTypeId,
-            routes: routesCodes.shift().map(buildRoute)
+            routes: routesDescs.shift().map(buildRoute)
         });
     }
 
-    function buildRoute(routeCode) {
+    function buildRoute(routeDesc) {
         return {
-            code: routeCode,
+            code: routeDesc.code,
+            dir: routeDesc.dir,
+            lvl: routeDesc.lvl,
+            begin: routeDesc.begin,
+            end: routeDesc.end,
             stops: routes.shift().map(buildBusStopScheduleByDays)
         };
     }
